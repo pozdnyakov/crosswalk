@@ -15,9 +15,9 @@ namespace  {
 // Make the class depend on gfx::Display to avoid the hack below:
 
 #if defined(OS_TIZEN_MOBILE)
-int rotation_start = 0; // Default is portrait primary.
+int rotation_start = 0;  // Default is portrait primary.
 #else
-int rotation_start = -1; // Default is landscape primary.
+int rotation_start = -1;  // Default is landscape primary.
 #endif
 
 blink::WebScreenOrientationType ToScreenOrientation(

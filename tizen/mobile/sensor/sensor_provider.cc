@@ -34,6 +34,15 @@ void SensorProvider::RemoveObserver(Observer* observer) {
   observers_.erase(observer);
 }
 
+void SensorProvider::OnScreenOrientationChanged(
+    blink::WebScreenOrientationType orientation) {
+  last_orientation_ = orientation;
+
+  std::set<Observer*>::iterator it;
+  for (it = observers_.begin(); it != observers_.end(); ++it)
+    (*it)->OnScreenOrientationChanged(orientation);
+}
+
 void SensorProvider::OnOrientationChanged(float alpha,
                                           float beta,
                                           float gamma) {

@@ -82,7 +82,7 @@ static void SetWindowRotation(aura::Window* window, gfx::Display display) {
   window->SetTransform(rotate);
 }
 
-} // namespace.
+}  // namespace.
 
 namespace xwalk {
 
