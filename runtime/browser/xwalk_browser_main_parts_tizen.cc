@@ -45,6 +45,8 @@ void XWalkBrowserMainPartsTizen::PreMainMessageLoopStart() {
     command_line->AppendSwitchASCII(switches::kUseGL, gl_name);
   }
 
+  command_line->AppendSwitch(switches::kEnableViewportMeta);
+
   XWalkBrowserMainParts::PreMainMessageLoopStart();
 }
 
