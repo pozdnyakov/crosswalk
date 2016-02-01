@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_DELEGATE_WIN_H_
-#define XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_DELEGATE_WIN_H_
+#ifndef XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_DELEGATE_H_
+#define XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_DELEGATE_H_
 
 #include <string>
 #include <utility>
@@ -24,23 +24,23 @@ class PresentationFrame;
 class PresentationSession;
 class XWalkBrowserContext;
 
-class XWalkPresentationServiceDelegateWin
-    : public content::WebContentsUserData<XWalkPresentationServiceDelegateWin>,
+class XWalkPresentationServiceDelegate
+    : public content::WebContentsUserData<XWalkPresentationServiceDelegate>,
       public content::PresentationServiceDelegate,
-      public base::SupportsWeakPtr<XWalkPresentationServiceDelegateWin> {
+      public base::SupportsWeakPtr<XWalkPresentationServiceDelegate> {
  public:
   using RenderFrameHostId = std::pair<int, int>;
 
   static content::PresentationServiceDelegate* GetOrCreateForWebContents(
       content::WebContents* web_contents);
 
-  ~XWalkPresentationServiceDelegateWin() override;
+  ~XWalkPresentationServiceDelegate() override;
 
  private:
-  explicit XWalkPresentationServiceDelegateWin(
+  explicit XWalkPresentationServiceDelegate(
       content::WebContents* web_contents);
   friend class
-      content::WebContentsUserData<XWalkPresentationServiceDelegateWin>;
+      content::WebContentsUserData<XWalkPresentationServiceDelegate>;
 
   void AddObserver(int render_process_id,
       int render_frame_id,
@@ -124,4 +124,4 @@ class XWalkPresentationServiceDelegateWin
 
 }  // namespace xwalk
 
-#endif  // XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_DELEGATE_WIN_H_
+#endif  // XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_DELEGATE_H_
