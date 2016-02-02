@@ -79,7 +79,11 @@
 #include "xwalk/runtime/browser/xwalk_browser_main_parts_mac.h"
 #endif
 
-#include "xwalk/runtime/browser/xwalk_presentation_service_delegate.h"
+#if defined(OS_ANDROID)
+#include "xwalk/runtime/browser/xwalk_presentation_service_delegate_android.h"
+#elif defined(OS_WIN)
+#include "xwalk/runtime/browser/xwalk_presentation_service_delegate_win.h"
+#endif
 
 namespace xwalk {
 
@@ -420,8 +424,11 @@ void XWalkContentBrowserClient::GetStoragePartitionConfigForSite(
 
 content::PresentationServiceDelegate* XWalkContentBrowserClient::
     GetPresentationServiceDelegate(content::WebContents* web_contents) {
-#if defined(OS_WIN) || defined (OS_ANDROID)
-  return XWalkPresentationServiceDelegate::
+#if defined(OS_WIN)
+  return XWalkPresentationServiceDelegateWin::
+      GetOrCreateForWebContents(web_contents);
+#elif defined(OS_ANDROID)
+  return XWalkPresentationServiceDelegateAndroid::
       GetOrCreateForWebContents(web_contents);
 #else
   return nullptr;

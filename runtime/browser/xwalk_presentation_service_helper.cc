@@ -2,21 +2,21 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "xwalk/runtime/browser/xwalk_presentation_service_session.h"
+#include "xwalk/runtime/browser/xwalk_presentation_service_helper.h"
 
 namespace xwalk {
 
-DisplayInfoManager* DisplayInfoManager::GetInstance() {
-  return base::Singleton<DisplayInfoManager>::get();
-}
+DisplayInfoManager* DisplayInfoManager::instance_ = nullptr;
 
-DisplayInfoManager::DisplayInfoManager() {
+DisplayInfoManager::DisplayInfoManager(DisplayInfoManagerService* service)
+  : service_(service) {
   UpdateInfoList();
   ListenMonitorsUpdate();
 }
 
 DisplayInfoManager::~DisplayInfoManager() {
   StopListenMonitorsUpdate();
+  delete service_;
 }
 
 const DisplayInfo* DisplayInfoManager::FindAvailable() const {
@@ -50,6 +50,18 @@ bool DisplayInfoManager::MarkAsUsed(
   return false;
 }
 
+void DisplayInfoManager::FindAllAvailableMonitors() {
+  service_->FindAllAvailableMonitors(&info_list_);
+}
+
+void DisplayInfoManager::ListenMonitorsUpdate() {
+  service_->ListenMonitorsUpdate();
+}
+
+void DisplayInfoManager::StopListenMonitorsUpdate() {
+  service_->StopListenMonitorsUpdate();
+}
+
 void DisplayInfoManager::UpdateInfoList() {
   std::vector<SystemString> ids_in_use;
   for (DisplayInfo& info : this->info_list_) {
@@ -58,7 +70,7 @@ void DisplayInfoManager::UpdateInfoList() {
   }
 
   this->info_list_.clear();
-  this->platformFindAllAvailableMonitors();
+  this->FindAllAvailableMonitors();
 
   for ( auto& data : info_list_ ) {
     auto found = std::find(ids_in_use.begin(), ids_in_use.end(), data.id);

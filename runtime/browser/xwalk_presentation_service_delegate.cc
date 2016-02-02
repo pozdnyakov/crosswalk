@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Intel Corporation. All rights reserved.
+// Copyright (c) 2016 Intel Corporation. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -21,9 +21,7 @@
 #include "xwalk/runtime/browser/xwalk_browser_context.h"
 #include "xwalk/runtime/browser/xwalk_runner.h"
 #include "xwalk/runtime/browser/android/xwalk_presentation_host.h"
-#include "xwalk/runtime/browser/xwalk_presentation_service_session.h"
-
-DEFINE_WEB_CONTENTS_USER_DATA_KEY(xwalk::XWalkPresentationServiceDelegate);
+#include "xwalk/runtime/browser/xwalk_presentation_service_helper.h"
 
 namespace xwalk {
 

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_SESSION_H_
-#define XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_SESSION_H_
+#ifndef XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_HELPER_H_
+#define XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_HELPER_H_
 
 #include <string>
 #include <vector>
@@ -25,9 +25,9 @@
 #include "xwalk/runtime/browser/xwalk_presentation_service_delegate.h"
 
 #if defined(OS_ANDROID)
-#  include "xwalk/runtime/browser/android/xwalk_presentation_host.h"
+#include "xwalk/runtime/browser/android/xwalk_presentation_host.h"
 #elif defined(OS_WIN)
-#  include <Windows.h>
+#include <Windows.h>
 #endif
 
 namespace xwalk {
@@ -67,13 +67,22 @@ inline Application* GetApplication(content::WebContents* contents) {
   return app_service->GetApplicationByRenderHostID(rph_id);
 }
 
-
 struct DisplayInfo {
   gfx::Rect bounds;
   bool is_primary;
   bool in_use;
   SystemString name;
   SystemString id;
+};
+
+// Platform-dependent service interface for DisplayInfoManager class
+class DisplayInfoManagerService {
+ public:
+  virtual ~DisplayInfoManagerService() {}
+  virtual void FindAllAvailableMonitors(
+    std::vector<DisplayInfo>* info_list) = 0;
+  virtual void ListenMonitorsUpdate() = 0;
+  virtual void StopListenMonitorsUpdate() = 0;
 };
 
 // This class provides up-to-date info about the available
@@ -88,9 +97,9 @@ class DisplayInfoManager {
     virtual ~Observer() {}
   };
 
-  ~DisplayInfoManager();
-
+ public:
   static DisplayInfoManager* GetInstance();
+  ~DisplayInfoManager();
 
   const std::vector<DisplayInfo>& info_list() const { return info_list_; }
 
@@ -107,32 +116,23 @@ class DisplayInfoManager {
     observers_.RemoveObserver(observer);
   }
 
- private:
-#if defined(OS_ANDROID)
-  static void DisplayChangeCallback(int display_id);
-#elif defined(OS_WIN)
-  static LRESULT CALLBACK WndProcCallback(
-    HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-  static BOOL CALLBACK MonitorEnumCallback(
-    HMONITOR hMonitor, HDC hdc, LPRECT lprcMonitor, LPARAM lParam);
-#endif
-
- private:
-  DisplayInfoManager();
-  friend struct base::DefaultSingletonTraits<DisplayInfoManager>;
-
-  void platformFindAllAvailableMonitors();
-  void UpdateInfoList();
-  void ListenMonitorsUpdate();
-  void StopListenMonitorsUpdate();
   void NotifyInfoChanged();
 
+  void UpdateInfoList();
+
+ public:
+  void FindAllAvailableMonitors();
+  void ListenMonitorsUpdate();
+  void StopListenMonitorsUpdate();
+
+ private:
+  explicit DisplayInfoManager(DisplayInfoManagerService* service);
   std::vector<DisplayInfo> info_list_;
-  base::Closure callback_;
+
+ private:
+  static DisplayInfoManager* instance_;
   base::ObserverList<Observer> observers_;
-#if defined(OS_WIN)
-  HWND hwnd_;
-#endif
+  DisplayInfoManagerService* service_;
 };
 
 class PresentationSession :
@@ -146,10 +146,6 @@ class PresentationSession :
    protected:
     virtual ~Observer() {}
   };
-
-
-  int render_process_id_;
-  int render_frame_id_;
 
   struct CreateParams {
     content::WebContents* web_contents;
@@ -165,9 +161,9 @@ class PresentationSession :
     base::Callback<void(scoped_refptr<PresentationSession>,
         const std::string& error)>;
 
-  ~PresentationSession() override;
-
   static void Create(const CreateParams& params, SessionCallback callback);
+
+  ~PresentationSession() override;
 
   void Close();
 
@@ -185,19 +181,25 @@ class PresentationSession :
 
   SystemString display_id() const { return display_id_; }
 
-#if defined(OS_ANDROID)
-  void OnAndoridPresentationClosed();
-#endif
+  void NotifyClose();
+
+  int get_render_process_id() const { return render_process_id_; }
+  int get_render_frame_id() const { return render_frame_id_; }
+
+  void set_render_process_id(int id) { render_process_id_ = id; }
+  void set_render_frame_id(int id) { render_frame_id_ = id; }
 
  private:
   PresentationSession(
       const std::string& presentation_url,
       const std::string& presentation_id,
       const SystemString& display_id);
+
   void OnNewRuntimeAdded(Runtime* new_runtime) override;
   void OnRuntimeClosed(Runtime* runtime) override;
-  void NotifyClose();
 
+  int render_process_id_;
+  int render_frame_id_;
   SessionInfo session_info_;
   SystemString display_id_;
   ScopedVector<Runtime> runtimes_;
@@ -206,8 +208,6 @@ class PresentationSession :
   base::WeakPtrFactory<PresentationSession> weak_factory_;
   DISALLOW_COPY_AND_ASSIGN(PresentationSession);
 };
-
-
 
 // Used by PresentationServiceDelegateImpl to manage
 // listeners and default presentation info in a render frame.
@@ -266,4 +266,4 @@ class PresentationFrame : public PresentationSession::Observer,
 
 }  // namespace xwalk
 
-#endif  // XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_SESSION_H_
+#endif  // XWALK_RUNTIME_BROWSER_XWALK_PRESENTATION_SERVICE_HELPER_H_

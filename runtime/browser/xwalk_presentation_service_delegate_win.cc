@@ -1,13 +1,25 @@
-// Copyright (c) 2015 Intel Corporation. All rights reserved.
+// Copyright (c) 2016 Intel Corporation. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "xwalk/runtime/browser/xwalk_presentation_service_delegate.h"
-#include "xwalk/runtime/browser/xwalk_presentation_service_session.h"
+#include "xwalk/runtime/browser/xwalk_presentation_service_delegate_win.h"
+#include "xwalk/runtime/browser/xwalk_presentation_service_helper_win.h"
+
+#include <string>
+
+DEFINE_WEB_CONTENTS_USER_DATA_KEY(xwalk::XWalkPresentationServiceDelegateWin);
 
 namespace xwalk {
 
-content::PresentationServiceDelegate* XWalkPresentationServiceDelegate::
+XWalkPresentationServiceDelegateWin::XWalkPresentationServiceDelegateWin(
+    content::WebContents* web_contents)
+    : XWalkPresentationServiceDelegate(web_contents) {
+}
+
+XWalkPresentationServiceDelegateWin::~XWalkPresentationServiceDelegateWin() {
+}
+
+content::PresentationServiceDelegate* XWalkPresentationServiceDelegateWin::
     GetOrCreateForWebContents(content::WebContents* web_contents) {
   DCHECK(web_contents);
   Application* app = GetApplication(web_contents);
@@ -16,11 +28,11 @@ content::PresentationServiceDelegate* XWalkPresentationServiceDelegate::
     return nullptr;
   }
   // CreateForWebContents does nothing if the delegate instance already exists.
-  XWalkPresentationServiceDelegate::CreateForWebContents(web_contents);
-  return XWalkPresentationServiceDelegate::FromWebContents(web_contents);
+  XWalkPresentationServiceDelegateWin::CreateForWebContents(web_contents);
+  return XWalkPresentationServiceDelegateWin::FromWebContents(web_contents);
 }
 
-void XWalkPresentationServiceDelegate::StartSession(
+void XWalkPresentationServiceDelegateWin::StartSession(
     int render_process_id,
     int render_frame_id,
     const std::string& presentation_url,
@@ -60,7 +72,7 @@ void XWalkPresentationServiceDelegate::StartSession(
   params.application = app;
 
   auto callback = base::Bind(
-      &XWalkPresentationServiceDelegate::OnSessionStarted,
+      &XWalkPresentationServiceDelegateWin::OnSessionStarted,
       AsWeakPtr(), render_frame_host_id, success_cb, error_cb);
   PresentationSession::Create(params, callback);
 }

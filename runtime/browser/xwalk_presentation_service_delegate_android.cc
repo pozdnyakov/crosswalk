@@ -1,22 +1,37 @@
-// Copyright (c) 2015 Intel Corporation. All rights reserved.
+// Copyright (c) 2016 Intel Corporation. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "xwalk/runtime/browser/xwalk_presentation_service_delegate.h"
-#include "xwalk/runtime/browser/xwalk_presentation_service_session.h"
+#include "xwalk/runtime/browser/xwalk_presentation_service_delegate_android.h"
+#include "xwalk/runtime/browser/xwalk_presentation_service_helper_android.h"
+
+#include <string>
+
+DEFINE_WEB_CONTENTS_USER_DATA_KEY(xwalk::
+  XWalkPresentationServiceDelegateAndroid);
 
 namespace xwalk {
 
-content::PresentationServiceDelegate* XWalkPresentationServiceDelegate::
+XWalkPresentationServiceDelegateAndroid::
+    XWalkPresentationServiceDelegateAndroid(
+    content::WebContents* web_contents)
+    : XWalkPresentationServiceDelegate(web_contents) {
+}
+
+XWalkPresentationServiceDelegateAndroid::
+    ~XWalkPresentationServiceDelegateAndroid() {
+}
+
+content::PresentationServiceDelegate* XWalkPresentationServiceDelegateAndroid::
     GetOrCreateForWebContents(content::WebContents* web_contents) {
   DCHECK(web_contents);
 
   // CreateForWebContents does nothing if the delegate instance already exists.
-  XWalkPresentationServiceDelegate::CreateForWebContents(web_contents);
-  return XWalkPresentationServiceDelegate::FromWebContents(web_contents);
+  XWalkPresentationServiceDelegateAndroid::CreateForWebContents(web_contents);
+  return XWalkPresentationServiceDelegateAndroid::FromWebContents(web_contents);
 }
 
-void XWalkPresentationServiceDelegate::StartSession(
+void XWalkPresentationServiceDelegateAndroid::StartSession(
     int render_process_id,
     int render_frame_id,
     const std::string& presentation_url,

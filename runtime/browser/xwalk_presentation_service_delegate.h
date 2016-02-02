@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Intel Corporation. All rights reserved.
+// Copyright (c) 2016 Intel Corporation. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -25,23 +25,17 @@ class PresentationSession;
 class XWalkBrowserContext;
 
 class XWalkPresentationServiceDelegate
-    : public content::WebContentsUserData<XWalkPresentationServiceDelegate>,
-      public content::PresentationServiceDelegate,
-      public base::SupportsWeakPtr<XWalkPresentationServiceDelegate> {
+    : public content::PresentationServiceDelegate {
  public:
   using RenderFrameHostId = std::pair<int, int>;
 
-  static content::PresentationServiceDelegate* GetOrCreateForWebContents(
-      content::WebContents* web_contents);
-
   ~XWalkPresentationServiceDelegate() override;
 
- private:
+ protected:
   explicit XWalkPresentationServiceDelegate(
       content::WebContents* web_contents);
-  friend class
-      content::WebContentsUserData<XWalkPresentationServiceDelegate>;
 
+ public:
   void AddObserver(int render_process_id,
       int render_frame_id,
       Observer* observer) override;
@@ -67,13 +61,6 @@ class XWalkPresentationServiceDelegate
       int render_frame_id,
       const std::string& default_presentation_url,
       const content::PresentationSessionStartedCallback& callback) override;
-
-  void StartSession(
-      int render_process_id,
-      int render_frame_id,
-      const std::string& presentation_url,
-      const content::PresentationSessionStartedCallback& success_cb,
-      const content::PresentationSessionErrorCallback& error_cb) override;
 
   void JoinSession(
       int render_process_id,
@@ -107,15 +94,16 @@ class XWalkPresentationServiceDelegate
       int render_frame_id,
       const content::SessionStateChangedCallback& state_changed_cb) override;
 
- private:
-  PresentationFrame* GetOrAddPresentationFrame(
-      const RenderFrameHostId& render_frame_host_id);
   void OnSessionStarted(
       const RenderFrameHostId& id,
       const content::PresentationSessionStartedCallback& success_cb,
       const content::PresentationSessionErrorCallback& error_cb,
       scoped_refptr<PresentationSession> session,
       const std::string& error);
+
+ protected:
+  PresentationFrame* GetOrAddPresentationFrame(
+      const RenderFrameHostId& render_frame_host_id);
 
   content::WebContents* web_contents_;
   base::ScopedPtrHashMap<RenderFrameHostId, scoped_ptr<PresentationFrame>>
