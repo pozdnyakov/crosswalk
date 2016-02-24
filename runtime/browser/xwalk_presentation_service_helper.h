@@ -78,6 +78,7 @@ struct DisplayInfo {
 // Platform-dependent service interface for DisplayInfoManager class
 class DisplayInfoManagerService {
  public:
+  static scoped_ptr<DisplayInfoManagerService> Create();
   virtual ~DisplayInfoManagerService() {}
   virtual void FindAllAvailableMonitors(
     std::vector<DisplayInfo>* info_list) = 0;
@@ -126,13 +127,13 @@ class DisplayInfoManager {
   void StopListenMonitorsUpdate();
 
  private:
-  explicit DisplayInfoManager(DisplayInfoManagerService* service);
+  friend struct base::DefaultSingletonTraits<DisplayInfoManager>;
+  explicit DisplayInfoManager();
   std::vector<DisplayInfo> info_list_;
 
  private:
-  static DisplayInfoManager* instance_;
   base::ObserverList<Observer> observers_;
-  DisplayInfoManagerService* service_;
+  scoped_ptr<DisplayInfoManagerService> service_;
 };
 
 class PresentationSession :
@@ -212,12 +213,10 @@ class PresentationSession :
 // Used by PresentationServiceDelegateImpl to manage
 // listeners and default presentation info in a render frame.
 class PresentationFrame : public PresentationSession::Observer,
-#if defined(OS_ANDROID)
-                          public XWalkPresentationHost::SessionObserver,
-#endif
                           public DisplayInfoManager::Observer {
  public:
-  explicit PresentationFrame(const RenderFrameHostId& render_frame_host_id);
+   static scoped_ptr<PresentationFrame> Create(
+       const RenderFrameHostId& render_frame_host_id);
   ~PresentationFrame() override;
 
   // Mirror corresponding APIs in PresentationServiceDelegateImpl.
@@ -242,10 +241,8 @@ class PresentationFrame : public PresentationSession::Observer,
 
   PresentationSession* session() { return session_.get(); }
 
-#if defined(OS_ANDROID)
-  virtual void OnPresentationClosed(int render_process_id,
-    int render_frame_id) override;
-#endif
+ protected:
+  explicit PresentationFrame(const RenderFrameHostId& render_frame_host_id);
 
  private:
   // PresentationSession::Observer overrides.

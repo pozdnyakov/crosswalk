@@ -164,8 +164,7 @@ PresentationFrame* XWalkPresentationServiceDelegate::
   if (!presentation_frames_.contains(render_frame_host_id)) {
     presentation_frames_.add(
         render_frame_host_id,
-        scoped_ptr<PresentationFrame>(
-            new PresentationFrame(render_frame_host_id)));
+        PresentationFrame::Create(render_frame_host_id));
   }
   return presentation_frames_.get(render_frame_host_id);
 }

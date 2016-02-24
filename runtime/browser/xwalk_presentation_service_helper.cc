@@ -3,20 +3,30 @@
 // found in the LICENSE file.
 
 #include "xwalk/runtime/browser/xwalk_presentation_service_helper.h"
+#if defined(OS_WIN)
+#include "xwalk/runtime/browser/xwalk_presentation_service_helper_win.h"
+#endif
 
 namespace xwalk {
 
-DisplayInfoManager* DisplayInfoManager::instance_ = nullptr;
+scoped_ptr<DisplayInfoManagerService> DisplayInfoManagerService::Create() {
+#if defined(OS_WIN)
+  return scoped_ptr<DisplayInfoManagerService>(new DisplayInfoManagerServiceWin());
+#endif
+}
 
-DisplayInfoManager::DisplayInfoManager(DisplayInfoManagerService* service)
-  : service_(service) {
+DisplayInfoManager* DisplayInfoManager::GetInstance() {
+  return base::Singleton<DisplayInfoManager>::get();
+}
+
+DisplayInfoManager::DisplayInfoManager()
+  : service_(DisplayInfoManagerService::Create()) {
   UpdateInfoList();
   ListenMonitorsUpdate();
 }
 
 DisplayInfoManager::~DisplayInfoManager() {
   StopListenMonitorsUpdate();
-  delete service_;
 }
 
 const DisplayInfo* DisplayInfoManager::FindAvailable() const {
@@ -90,7 +100,6 @@ void DisplayInfoManager::NotifyInfoChanged() {
 }
 
 
-
 PresentationSession::PresentationSession(
     const std::string& presentation_url,
     const std::string& presentation_id,
@@ -129,6 +138,30 @@ void PresentationSession::NotifyClose() {
                     OnPresentationSessionClosed(session_info_));
 }
 
+scoped_ptr<PresentationFrame> PresentationFrame::Create(
+    const RenderFrameHostId& render_frame_host_id) {
+#if defined(OS_ANDROID)
+  return scoped_ptr<PresentationFrame>(
+      new PresentationFrameAndroid(render_frame_host_id));
+#else
+  return scoped_ptr<PresentationFrame>(
+      new PresentationFrame(render_frame_host_id));
+#endif
+}
+
+PresentationFrame::PresentationFrame(const RenderFrameHostId& render_frame_host_id)
+  : screen_listener_(nullptr),
+    render_frame_host_id_(render_frame_host_id) {
+  DisplayInfoManager::GetInstance()->AddObserver(this);
+}
+
+PresentationFrame::~PresentationFrame() {
+  if (delegate_observer_)
+    delegate_observer_->OnDelegateDestroyed();
+  if (session_)
+    session_->RemoveObserver(this);
+  DisplayInfoManager::GetInstance()->RemoveObserver(this);
+}
 
 void PresentationFrame::OnPresentationSessionStarted(
     scoped_refptr<PresentationSession> session) {
@@ -220,6 +253,5 @@ void PresentationFrame::ListenForSessionStateChange(
   CHECK(state_changed_cb_.is_null());
   state_changed_cb_ = state_changed_cb;
 }
-
 
 }  // namespace xwalk

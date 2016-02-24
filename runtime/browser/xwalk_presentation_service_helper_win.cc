@@ -2,98 +2,81 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "xwalk/runtime/browser/xwalk_presentation_service_helper.h"
+#include "xwalk/runtime/browser/xwalk_presentation_service_helper_win.h"
 
 namespace xwalk {
 
+DisplayInfoManagerServiceWin::DisplayInfoManagerServiceWin()
+  : info_list_(nullptr),
+    hwnd_(NULL) {
+}
 
-class DisplayInfoManagerServiceWin
-    : public DisplayInfoManagerService {
- public:
-  DisplayInfoManagerServiceWin()
-    : info_list_(nullptr),
-      hwnd_(NULL) {
+DisplayInfoManagerServiceWin::~DisplayInfoManagerServiceWin() {
+}
+
+void DisplayInfoManagerServiceWin::FindAllAvailableMonitors(
+  std::vector<DisplayInfo>* info_list) {
+  info_list_ = info_list;
+  EnumDisplayMonitors(
+      0, 0, MonitorEnumCallback, reinterpret_cast<LPARAM>(this));
+}
+
+void DisplayInfoManagerServiceWin::ListenMonitorsUpdate() {
+  const auto class_name = L"_LISTEN_DISPLAYCHANGE";
+  WNDCLASSEX wx = {};
+  wx.cbSize = sizeof(WNDCLASSEX);
+  wx.lpfnWndProc = WndProcCallback;
+  wx.hInstance = GetModuleHandle(NULL);
+  wx.lpszClassName = class_name;
+  if (!RegisterClassEx(&wx)) {
+    LOG(ERROR) << "Failed to register a window class for"
+               << "listening WM_DISPLAYCHANGE";
+    return;
   }
 
-  ~DisplayInfoManagerServiceWin() override {
+  hwnd_ = CreateWindowEx(
+      0, class_name, NULL, WS_OVERLAPPEDWINDOW, 0, 0, 0, 0,
+      HWND_DESKTOP, NULL, GetModuleHandle(NULL), NULL);
+  if (!hwnd_)
+     LOG(ERROR)
+      << "Failed to register a window for listening WM_DISPLAYCHANGE";
+}
+
+void DisplayInfoManagerServiceWin::StopListenMonitorsUpdate() {
+  if (hwnd_) {
+    CloseWindow(hwnd_);
+    hwnd_ = NULL;
   }
+}
 
-  void FindAllAvailableMonitors(
-    std::vector<DisplayInfo>* info_list) override {
-    info_list_ = info_list;
-    EnumDisplayMonitors(
-        0, 0, MonitorEnumCallback, reinterpret_cast<LPARAM>(this));
+BOOL DisplayInfoManagerServiceWin::MonitorEnumCallback(
+    HMONITOR hMonitor, HDC hdc, LPRECT lprcMonitor, LPARAM lParam) {
+  MONITORINFOEX info_platform;
+  info_platform.cbSize = sizeof(MONITORINFOEX);
+  GetMonitorInfo(hMonitor, &info_platform);
+
+  DISPLAY_DEVICE display_device = {};
+  display_device.cb = sizeof(DISPLAY_DEVICE);
+  EnumDisplayDevices(info_platform.szDevice, 0, &display_device, 0);
+
+  DisplayInfo info = {};
+  info.bounds = gfx::Rect(*lprcMonitor);
+  info.is_primary = info_platform.dwFlags & MONITORINFOF_PRIMARY;
+  info.name = display_device.DeviceName;
+  info.id = display_device.DeviceID;
+
+  auto self = reinterpret_cast<DisplayInfoManagerServiceWin*>(lParam);
+  self->info_list_->push_back(info);
+
+  return TRUE;
+}
+
+LRESULT DisplayInfoManagerServiceWin::WndProcCallback(
+    HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+  if (message == WM_DISPLAYCHANGE) {
+    DisplayInfoManager::GetInstance()->UpdateInfoList();
   }
-
-  void ListenMonitorsUpdate() override {
-    const auto class_name = L"_LISTEN_DISPLAYCHANGE";
-    WNDCLASSEX wx = {};
-    wx.cbSize = sizeof(WNDCLASSEX);
-    wx.lpfnWndProc = WndProcCallback;
-    wx.hInstance = GetModuleHandle(NULL);
-    wx.lpszClassName = class_name;
-    if (!RegisterClassEx(&wx)) {
-      LOG(ERROR) << "Failed to register a window class for"
-                 << "listening WM_DISPLAYCHANGE";
-      return;
-    }
-
-    hwnd_ = CreateWindowEx(
-        0, class_name, NULL, WS_OVERLAPPEDWINDOW, 0, 0, 0, 0,
-        HWND_DESKTOP, NULL, GetModuleHandle(NULL), NULL);
-    if (!hwnd_)
-      LOG(ERROR)
-        << "Failed to register a window for listening WM_DISPLAYCHANGE";
-  }
-
-  void StopListenMonitorsUpdate() override {
-    if (hwnd_) {
-      CloseWindow(hwnd_);
-      hwnd_ = NULL;
-    }
-  }
-
-  static BOOL CALLBACK MonitorEnumCallback(
-      HMONITOR hMonitor, HDC hdc, LPRECT lprcMonitor, LPARAM lParam) {
-    MONITORINFOEX info_platform;
-    info_platform.cbSize = sizeof(MONITORINFOEX);
-    GetMonitorInfo(hMonitor, &info_platform);
-
-    DISPLAY_DEVICE display_device = {};
-    display_device.cb = sizeof(DISPLAY_DEVICE);
-    EnumDisplayDevices(info_platform.szDevice, 0, &display_device, 0);
-
-    DisplayInfo info = {};
-    info.bounds = gfx::Rect(*lprcMonitor);
-    info.is_primary = info_platform.dwFlags & MONITORINFOF_PRIMARY;
-    info.name = display_device.DeviceName;
-    info.id = display_device.DeviceID;
-
-    auto self = reinterpret_cast<DisplayInfoManagerServiceWin*>(lParam);
-    self->info_list_->push_back(info);
-
-    return TRUE;
-  }
-
-  static LRESULT CALLBACK WndProcCallback(
-      HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
-    if (message == WM_DISPLAYCHANGE) {
-      DisplayInfoManager::GetInstance()->UpdateInfoList();
-    }
-    return DefWindowProc(hWnd, message, wParam, lParam);
-  }
-
- private:
-  HWND hwnd_;
-  std::vector<DisplayInfo>* info_list_;
-};
-
-
-DisplayInfoManager* DisplayInfoManager::GetInstance() {
-  if ( instance_ == nullptr ) {
-    instance_ = new DisplayInfoManager(new DisplayInfoManagerServiceWin());
-  }
-  return instance_;
+  return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 void PresentationSession::Create(
@@ -134,18 +117,5 @@ void PresentationSession::Close() {
     runtime->Close();
 }
 
-PresentationFrame::PresentationFrame(const RenderFrameHostId& render_frame_host_id)
-  : screen_listener_(nullptr),
-    render_frame_host_id_(render_frame_host_id) {
-  DisplayInfoManager::GetInstance()->AddObserver(this);
-}
-
-PresentationFrame::~PresentationFrame() {
-  if (delegate_observer_)
-    delegate_observer_->OnDelegateDestroyed();
-  if (session_)
-    session_->RemoveObserver(this);
-  DisplayInfoManager::GetInstance()->RemoveObserver(this);
-}
 
 }  // namespace xwalk
