@@ -69,8 +69,8 @@ void DisplayInfoManager::UpdateInfoList() {
       ids_in_use.push_back(info.id);
   }
 
-  this->info_list_.clear();
-  this->FindAllAvailableMonitors();
+  info_list_.clear();
+  FindAllAvailableMonitors();
 
   for ( auto& data : info_list_ ) {
     auto found = std::find(ids_in_use.begin(), ids_in_use.end(), data.id);

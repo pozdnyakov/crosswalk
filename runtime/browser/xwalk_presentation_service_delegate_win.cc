@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "xwalk/runtime/browser/xwalk_presentation_service_delegate_win.h"
-#include "xwalk/runtime/browser/xwalk_presentation_service_helper_win.h"
+#include "xwalk/runtime/browser/xwalk_presentation_service_helper.h"
 
 #include <string>
 

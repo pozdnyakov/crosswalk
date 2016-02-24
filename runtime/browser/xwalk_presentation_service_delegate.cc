@@ -20,7 +20,7 @@
 #include "xwalk/runtime/browser/runtime.h"
 #include "xwalk/runtime/browser/xwalk_browser_context.h"
 #include "xwalk/runtime/browser/xwalk_runner.h"
-#include "xwalk/runtime/browser/android/xwalk_presentation_host.h"
+//#include "xwalk/runtime/browser/android/xwalk_presentation_host.h"
 #include "xwalk/runtime/browser/xwalk_presentation_service_helper.h"
 
 namespace xwalk {

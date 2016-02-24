@@ -20,7 +20,7 @@ class DisplayInfoManagerServiceWin
 
   void FindAllAvailableMonitors(
     std::vector<DisplayInfo>* info_list) override {
-    this->info_list_ = info_list;
+    info_list_ = info_list;
     EnumDisplayMonitors(
         0, 0, MonitorEnumCallback, reinterpret_cast<LPARAM>(this));
   }
@@ -49,7 +49,7 @@ class DisplayInfoManagerServiceWin
   void StopListenMonitorsUpdate() override {
     if (hwnd_) {
       CloseWindow(hwnd_);
-      hwnd = NULL;
+      hwnd_ = NULL;
     }
   }
 
@@ -96,7 +96,6 @@ DisplayInfoManager* DisplayInfoManager::GetInstance() {
   return instance_;
 }
 
-
 void PresentationSession::Create(
     const PresentationSession::CreateParams& params,
     PresentationSession::SessionCallback callback) {
@@ -135,8 +134,9 @@ void PresentationSession::Close() {
     runtime->Close();
 }
 
-PresentationFrame::PresentationFrame()
-  : screen_listener_(nullptr) {
+PresentationFrame::PresentationFrame(const RenderFrameHostId& render_frame_host_id)
+  : screen_listener_(nullptr),
+    render_frame_host_id_(render_frame_host_id) {
   DisplayInfoManager::GetInstance()->AddObserver(this);
 }
 
